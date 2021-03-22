@@ -1,0 +1,8 @@
+sdr_settings:
+  sample_rate: 245e3
+  center_freq: 315e6
+  freq_corr: -207
+  gain: 'auto'
+  log_captures: true
+
+
