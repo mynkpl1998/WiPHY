@@ -59,10 +59,33 @@ def bit2str(bit_str):
     return ''.join(str(i) for i in bit_str)
 
 def str2dec(bit_str):
+    """Converts the string of ones and zeros to 
+       correspoding Base 10 (Decimal) representation.
+
+    Inputs
+    ------
+    * bit_str (list or np.array):        String of zeros and ones.
+
+    Returns
+    -------
+    * (int):                             Corresponding Base 10 (Decimal) Number.
+    """
     return int(bit_str, 2)
 
-def dec2bin(dec):
-    return np.binary_repr(dec, 3)
+def dec2bin(dec, width):
+    """Converts the Base 10 unsigned integer to 
+       corresponding string of ones and zeros (Binary Represenation).
+
+    Inputs
+    ------
+    * dec (int):                         Unsigned integer. 
+    * width (unsigned width):            Width of the binary string.
+    
+    Returns
+    -------
+    * (str):                             Corresponding string of zeros and ones.
+    """
+    return np.binary_repr(dec, width)
 
 def search_sequence_cv2(arr,seq):
     """ Find sequence in an array using cv2.
