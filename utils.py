@@ -87,11 +87,25 @@ def dec2bin(dec, width):
     """
     return np.binary_repr(dec, width)
 
-def search_sequence_cv2(arr,seq):
+
+def search_sequence_cv2(arr, seq):
     """ Find sequence in an array using cv2.
+    Copied from Source: https://stackoverflow.com/a/36535397
+
+    Inputs
+    ------
+    * arr (list or np.array):                 The array to search the sequence in.
+    * seq (list or np.array):                 The sequence to be searched.
+
+    Returns
+    -------
+    * (list):                                 Index(s) where the sequence match was found.
+                                               Returns empty list if not found any.
     """
     # Run a template match with input sequence as the template across
     # the entire length of the input array and get scores.
+    arr = np.array(arr)
+    seq = np.array(seq)
     S = cv2m(arr.astype('uint8'),seq.astype('uint8'),cv2.TM_SQDIFF)
 
     # Now, with floating point array cases, the matching scores might not be 
@@ -110,26 +124,126 @@ def search_sequence_cv2(arr,seq):
 
 class Frame:
 
+    """Implements a 16-bit network Frame.
+           
+        The Frame is made up of four components and 
+        uses 3-bit CRC to validate the integrity of 
+        the received data(payload). The following is
+        the frame structure.
+
+        * Preamble -       5 Bits
+        * Frame Sequence - 2 Bits
+        * Payload -        6 Bits
+        * Checksum -       3 Bits
+
+        
+        Inputs
+        ------
+        * preamble (int):                     Frame preamble.
+        * seq_id (int):                       Frame sequence id.
+        * payload (int):                      Frame payload.
+        * checksum (int):                     Frame checksum.
+        * crc_polynomial (int):               CRC polynomial used for encoding
+                                                the payload.
+
+        Attributes
+        ----------
+        * preamble (int):                     Returns premable.
+        * seq_id (int):                       Returns sequence id.
+        * payload (int):                      Returns payload.
+        * checksum (int):                     Returns checksum.
+        * is_checksum_valid (bool):           Returns the integrity of the 
+                                                payload by running CRC check. 
+                                                True if passes else False.
+    """
+
     def __init__(self,
+                 preamble,
                  seq_id,
                  payload,
-                 crc):
-        self.seq_id = seq_id
-        self.payload = payload
-        self.crc = crc
+                 checksum,
+                 crc_polynomial):
 
-        self.checksum = self.validate_frame()
+        if preamble < 0 or preamble > 31:
+            raise ValueError("Expected frame premable to be > 0 and < 32. Got: %d"%(preamble))
+
+        if seq_id < 0 or seq_id > 3:
+            raise ValueError("Expected frame sequence id to be > 0 and < 4. Got: %d"%(seq_id))
+
+        if payload < 0 or payload > 63:
+            raise ValueError("Expected frame payload to be > 0 and < 64. Got: %d"%(payload))
+
+        if checksum < 0 or checksum > 7:
+            raise ValueError("Expected frame checksum to be > 0 and < 8. Got: %d"%(checksum))
+        
+        if crc_polynomial != int(crc_polynomial):
+            raise ValueError("Expected CRC Polynomial to be integer. Got: %d"%(type(crc_polynomial)))
+
+        self.__preamble_len = 5
+        self.__seq_id_len = 2
+        self.__payload_len = 6
+        self.__checksum_len = 3
+
+        self.__preamble = preamble
+        self.__seq_id = seq_id
+        self.__payload = payload
+        self.__checksum = checksum
+        self.__crc_polynomial = dec2bin(crc_polynomial, self.__checksum_len + 1)
+        self.__is_checksum_valid = self.__validate_checksum()
     
-    def validate_frame(self):
-        return crc_check(dec2bin(self.payload),
-                         '1101',
-                         dec2bin(self.crc))
+    @property
+    def payload(self,):
+        """Returns the frame payload.
+        """
+        return self.__payload
+    
+    @property
+    def seq_id(self,):
+        """Returns the frame sequence id.
+        """
+        return self.__seq_id
+    
+    @property
+    def preamble(self, ):
+        """Returns the frame preamble.
+        """
+        return self.__preamble
+    
+    @property
+    def checksum(self, ):
+        """Returns the frame checksum.
+        """
+        return self.__checksum
+    
+    @property
+    def crc_polynomial(self, ):
+        """Returns the CRC polynomial used to 
+           check the frame integrity.
+        """
+        return self.__crc_polynomial
+    
+    @property
+    def is_checksum_valid(self):
+        """Returns whether checksum failed or
+        passed.
+        """
+        return self.__is_checksum_valid
+    
+    def __validate_checksum(self):
+        """Checks the integrity of the payload.
+        """
+        return crc_check(dec2bin(self.payload, self.__payload_len),
+                         self.crc_polynomial,
+                         dec2bin(self.checksum, self.__checksum_len))
 
     def get_frame_str(self):
-        return "Frame Seq: %d, Payload, %d, CRC: %d, Checksum: %s."%(self.seq_id, 
-                                                                    self.payload,
-                                                                    self.crc,
-                                                                    "PASS" if self.checksum else "FAIL")
+        """Returns the frame structre in string format.
+        """
+        return "Preamble: %d Frame Seq: %d, Payload, %d, Checksum: %d, Integrity: %s."%(self.preamble, 
+                                                                                        self.seq_id,
+                                                                                        self.payload,
+                                                                                        self.checksum,
+                                                                                        "PASS" if self.is_checksum_valid else "FAIL")
 
 def search_sequence_numpy(arr,seq):
     """ Find sequence in an array using NumPy only.
