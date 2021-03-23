@@ -152,7 +152,7 @@ class Frame:
         * seq_id (int):                       Returns sequence id.
         * payload (int):                      Returns payload.
         * checksum (int):                     Returns checksum.
-        * crc_polynomial (str):               Return CRC polynomial.
+        * crc_polynomial (str):               Returns CRC polynomial.
         * is_checksum_valid (bool):           Returns the integrity of the 
                                                 payload by running CRC check. 
                                                 True if passes else False.
