@@ -246,7 +246,6 @@ class Frame:
                                                                                         self.checksum,
                                                                                         "PASS" if self.is_checksum_valid else "FAIL")
 
-
 class lowPassFilter:
 
     def __init__(self, sample_rate, cutoff, order):
@@ -262,17 +261,78 @@ class lowPassFilter:
     def apply(self, data):
         return lfilter(self.__b, self.__a, data)
 
-class muller:
+class Muller:
 
+    """Time synchronization block. 
+       Implements Mueller and Muller clock recovery technique.
+
+       Inputs
+       ------
+       * sps (float):                           Expected samples per symbol.
+       * alpha (float):                         Update/Learning rate.
+
+        Attributes
+        ----------
+        * mu (float):                           Current sampling offset.
+        * sps (float):                          Current samples per symbol.
+        * alpha (float):                        Learning rate.
+    """
     def __init__(self,
-                 sps):
-        self.__mu = 0
-        self.__sps = sps
-    
-    def sync(self, samples):
+                 sps,
+                 alpha):
+        
+        if sps != float(sps):
+            raise TypeError("Expected sps to be of type float. Got: %s"%(type(sps)))
 
-        out = np.zeros(samples.shape[0] + 10, dtype=np.complex)
-        out_rail = np.zeros(samples.shape[0] + 10, dtype=np.complex)
+        if alpha != float(alpha):
+            raise TypeError("Expected alpha to be of type float. Got: %s"%(type(alpha)))
+        
+        self.__mu = float(0)
+        self.__sps = float(sps)
+        self.__alpha = float(alpha)
+
+        if self.__alpha < 0 or self.__alpha > 1:
+            raise ValueError("Expected alpha to be within [0-1]. Got: %.2f"%(self.__alpha))
+        
+        if self.__sps < 0 :
+            raise ValueError("Expected sps > 0. Got %.2f"%(self.__sps))
+    
+    @property
+    def mu(self, ):
+        """Returns current sampling offset.
+        """
+        return self.__mu
+    
+    @property
+    def sps(self):
+        """Returns current estimate of samples per symbol.
+        """
+        return self.__sps
+    
+    @property
+    def alpha(self):
+        """Returns update/learning rate.
+        """
+        return self.__alpha
+
+    def sync(self, samples):
+        """Performs the symbol synchronization on the input samples
+            and returns the downsampled signal.
+
+        Inputs
+        ------
+        * samples (np.array of type np.complex):  Samples to synchronize.
+
+        Returns
+        -------
+        * (np.array of type np.complex):          Synchronized samples.
+        """
+
+        if samples.dtype != np.complex_:
+            raise TypeError("Expected samples of dtype np.complex. Got: %s"%(samples.dtype))
+
+        out = np.zeros(samples.shape[0] + 10, dtype=np.complex_)
+        out_rail = np.zeros(samples.shape[0] + 10, dtype=np.complex_)
         i_in = 0
         i_out = 2
         while i_out < samples.shape[0] and i_in < samples.shape[0]:
@@ -281,7 +341,7 @@ class muller:
             x = (out_rail[i_out] - out_rail[i_out-2]) * np.conj(out[i_out-1])
             y = (out[i_out] - out[i_out-2]) * np.conj(out_rail[i_out-1])
             mm_val = np.real(y - x)
-            self.__mu += self.__sps + 0.1*mm_val
+            self.__mu += self.__sps + self.__alpha*mm_val
             i_in += int(np.floor(self.__mu))
             self.__mu = self.__mu - np.floor(self.__mu)
             i_out += 1

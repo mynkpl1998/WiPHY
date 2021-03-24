@@ -1,6 +1,8 @@
 import pytest
 import numpy as np
-from utils import bit2dec, bit2str, str2dec, dec2bin, search_sequence_cv2, Frame
+from scipy import signal
+import matplotlib.pyplot as plt
+from utils import bit2dec, bit2str, str2dec, dec2bin, search_sequence_cv2, Frame, Muller
 
 def test_bit2dec():
     test_data = np.random.randint(0, 100, size=20)
@@ -77,4 +79,32 @@ def test_Frame():
     assert frame1.is_checksum_valid == False
     assert frame1.crc_polynomial == '1101'
 
-test_Frame()
+
+def test_Muller():
+
+    # Muller update rate.
+    alpha = 0.1
+    # Signal sample rate.
+    sample_rate = 300e3
+    # Signal symbol duration.
+    symbol_dur = 0.001 
+    # Calculate samples per symbol.
+    sps = sample_rate * symbol_dur
+    num_symbols = 4
+    signal_dur = num_symbols * symbol_dur
+    time = np.linspace(0, signal_dur, int(sps * num_symbols), endpoint=True)
+    sig = np.clip(signal.square(2*np.pi*(1/symbol_dur/2)*time), 0, 1).astype(np.complex_)
+
+    ''' 
+    plt.plot(time, np.abs(sig))
+    plt.show()
+    '''
+
+    m1 = Muller(sps=sps, alpha=alpha)
+    assert m1.mu == 0.0
+    assert m1.sps == sps
+    assert m1.alpha == alpha
+
+    out = m1.sync(sig)
+    assert out.size == num_symbols
+    assert np.abs(out).sum() == 2
