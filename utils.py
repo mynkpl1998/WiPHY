@@ -271,11 +271,11 @@ class Muller:
        * sps (float):                           Expected samples per symbol.
        * alpha (float):                         Update/Learning rate.
 
-        Attributes
-        ----------
-        * mu (float):                           Current sampling offset.
-        * sps (float):                          Current samples per symbol.
-        * alpha (float):                        Learning rate.
+       Attributes
+       ----------
+       * mu (float):                            Current sampling offset.
+       * sps (float):                           Current samples per symbol.
+       * alpha (float):                         Learning rate.
     """
     def __init__(self,
                  sps,
