@@ -445,7 +445,7 @@ class FrameDetector:
 
        Attributes
        ----------
-       * barker_seq (int):                 Returns the barker sequence to which detector is tuned to.
+       * barker_seq (int):                  Returns the barker sequence to which detector is tuned to.
        * crc_polynomial (int):              Returns the CRC polynomial.
     """
     def __init__(self, barker_seq, crc_polynomial):
