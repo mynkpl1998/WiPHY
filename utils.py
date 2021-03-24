@@ -230,6 +230,9 @@ class Frame:
         """
         return self.__is_checksum_valid
     
+    def __repr__(self):
+        return "<Frame, at 0x%x>: "%(id(self)) + self.get_frame_str()
+
     def __validate_checksum(self):
         """Checks the integrity of the payload.
         """
@@ -314,6 +317,12 @@ class Muller:
         """Returns update/learning rate.
         """
         return self.__alpha
+    
+    def __repr__(self):
+        return "<Muller, at 0x%x>: mu: %.2f, sps: %.2f, alpha: %.2f."%(id(self),
+                                                                      self.mu,
+                                                                      self.sps,
+                                                                      self.alpha)
 
     def sync(self, samples):
         """Performs the symbol synchronization on the input samples
@@ -346,17 +355,54 @@ class Muller:
             self.__mu = self.__mu - np.floor(self.__mu)
             i_out += 1
         out = out[2:i_out]
-
         return out
 
 
-class ASKdemod:
+class ASK_Demodulator:
+    """
+     Amplitude Shift Keying Demodulator block.
+     Performs ASK demodulation on the input signals
+     based upon the decision thershold.
 
-    def __init__(self, thershold=0.5):
-        self.__thershold = thershold
+     Inputs
+     ------
+     * decision_thershold (float):              ASK decision thershold. Default: 0.5
+
+     Attributes
+     ----------
+     * decision_thershold (float):              Returns ASK decision thershold.
+    """
+    def __init__(self, decision_thershold=0.5):
+        
+        if decision_thershold != float(decision_thershold):
+            raise TypeError("Expected decision thershold to be of type float. Got: %s"%(type(decision_thershold)))
+
+        self.__thershold = float(decision_thershold)
     
-    def demod(self, samples):
-        baseband_sig = (np.abs(samples) > self.__thershold).astype(int)
+    @property
+    def decision_thershold(self):
+        """Returns ASK decision thershold.
+        """
+        return self.__thershold
+    
+    def __repr__(self):
+        return "<ASK Demodulator, at 0x%x>: decision thershold: %.2f."%(id(self),
+                                                                        self.decision_thershold)
+    
+    def demodulate(self, samples):
+        """Performs ASK thershold based demodulation 
+           and returns the demodulated signal.
+        
+        Inputs
+        ------
+        * samples (np.array or list):                   Signal to be demodulated.
+
+        Returns
+        -------
+        * (np.array or list):                           ASK demodulated signal.
+        """
+        samples = np.array(samples)
+        baseband_sig = (samples > self.decision_thershold).astype(int)
         return baseband_sig
 
 

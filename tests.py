@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from utils import bit2dec, bit2str, str2dec, dec2bin, search_sequence_cv2, Frame, Muller
+from utils import bit2dec, bit2str, str2dec, dec2bin, search_sequence_cv2, Frame, Muller, ASK_Demodulator
 
 def test_bit2dec():
     test_data = np.random.randint(0, 100, size=20)
@@ -78,10 +78,10 @@ def test_Frame():
     assert frame1.payload == 63
     assert frame1.is_checksum_valid == False
     assert frame1.crc_polynomial == '1101'
+    #print(frame1)
 
 
 def test_Muller():
-
     # Muller update rate.
     alpha = 0.1
     # Signal sample rate.
@@ -108,3 +108,23 @@ def test_Muller():
     out = m1.sync(sig)
     assert out.size == num_symbols
     assert np.abs(out).sum() == 2
+    #print(m1)
+
+def test_ASK_Demodulator():
+    demod = ASK_Demodulator(decision_thershold=0.1)
+    assert demod.decision_thershold == 0.1
+
+    time = np.linspace(0, 1, 10)
+    freq = 2
+    ampl = 1.5
+    input_signal = ampl * np.sin(2 * np.pi * freq * time)
+    
+    '''
+    plt.plot(time, input_signal)
+    plt.plot(time, input_signal, 'x')
+    plt.show()
+    '''
+    
+    out = demod.demodulate(input_signal)
+    assert out.sum() == 4
+    #print(demod)
