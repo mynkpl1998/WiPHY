@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from utils import bit2dec, bit2str, str2dec, dec2bin, search_sequence_cv2, Frame, Muller, ASK_Demodulator
+from utils import bit2dec, bit2str, str2dec, dec2bin, str2list
+from utils import search_sequence_cv2, Frame, Muller, ASK_Demodulator, FrameDetector
 
 def test_bit2dec():
     test_data = np.random.randint(0, 100, size=20)
@@ -40,6 +41,16 @@ def test_dec2bin():
     for idx, test_case in enumerate(test_data):
         calculated_out = dec2bin(test_case, width_data[idx])
         assert calculated_out == golden[idx]
+
+def test_str2list():
+    data = '1101'
+    out = str2list(data, int)
+    assert sum(out) == 3
+
+    data = '0000000'
+    out = str2list(data, int)
+    assert sum(out) == 0
+
 
 def test_search_sequence_cv2():
     test_arr = np.concatenate((np.arange(0, 100), np.arange(70, 80)))
@@ -128,3 +139,41 @@ def test_ASK_Demodulator():
     out = demod.demodulate(input_signal)
     assert out.sum() == 4
     #print(demod)
+
+def test_FrameDetector():
+    barker_seq = 29
+    crc_polynomial = 13
+    f1 = FrameDetector(barker_seq, crc_polynomial)
+    
+    assert f1.barker_seq == barker_seq
+    assert f1.crc_polynomial == crc_polynomial
+
+    dummy_captures = [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0]
+    dummy_captures = np.array(dummy_captures)
+    out = f1.step(dummy_captures)
+
+    assert len(out) == 1
+    assert out[0].preamble == barker_seq
+    assert out[0].seq_id == 2
+    assert out[0].payload == 42
+    assert out[0].checksum == 5
+    assert out[0].is_checksum_valid == False
+
+    barker_seq = 29
+    crc_polynomial = 13
+    f1 = FrameDetector(barker_seq, crc_polynomial)
+    
+    assert f1.barker_seq == barker_seq
+    assert f1.crc_polynomial == crc_polynomial
+
+    dummy_captures = [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]
+    dummy_captures = np.array(dummy_captures)
+    out = f1.step(dummy_captures)
+
+    assert len(out) == 1
+    assert out[0].preamble == barker_seq
+    assert out[0].seq_id == 2
+    assert out[0].payload == 42
+    assert out[0].checksum == 3
+    assert out[0].is_checksum_valid == True
+

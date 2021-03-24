@@ -2,6 +2,16 @@ import cv2
 import numpy as np
 from cv2 import matchTemplate as cv2m
 
+__CONSTANTS__ = {
+    'FRAME_BITS': 16,
+    'FRAME_PREAMBLE_BITS': 5,
+    'FRAME_SEQ_ID_BITS': 2,
+    'FRAME_PAYLOAD_BITS': 6,
+    'FRAME_CHECKSUM_BITS': 3,
+    'FRAME_CONTENT_BITS': 11,
+    'FRAME_PAYLOAD_AND_SEQ_ID_BITS': 8,
+}
+
 def crc_remainder(input_bitstring, polynomial_bitstring, initial_filler):
     """Calculate the CRC remainder of a string of bits using a chosen polynomial.
     initial_filler should be '1' or '0'.
@@ -86,6 +96,23 @@ def dec2bin(dec, width):
     * (str):                             Corresponding string of zeros and ones.
     """
     return np.binary_repr(dec, width)
+
+def str2list(_str_, dtype):
+    """Splits the string content and returns it as
+       the list by converting it to required dtype.
+
+       Inputs
+       ------
+       * _str_ (str):                      String to be converted.
+       * dtype (np.dtype):                 Datatype to be applied after split.
+                                             Must be a valid datatype.
+        
+        Returns
+        -------
+        * (list):                          List with string content.
+    """
+    str_split = [dtype(char) for char in _str_]
+    return str_split
 
 
 def search_sequence_cv2(arr, seq):
@@ -180,10 +207,10 @@ class Frame:
         if crc_polynomial != int(crc_polynomial):
             raise ValueError("Expected CRC Polynomial to be integer. Got: %d"%(type(crc_polynomial)))
 
-        self.__preamble_len = 5
-        self.__seq_id_len = 2
-        self.__payload_len = 6
-        self.__checksum_len = 3
+        self.__preamble_len = __CONSTANTS__['FRAME_PREAMBLE_BITS']
+        self.__seq_id_len = __CONSTANTS__['FRAME_SEQ_ID_BITS']
+        self.__payload_len = __CONSTANTS__['FRAME_PAYLOAD_BITS'] 
+        self.__checksum_len = __CONSTANTS__['FRAME_CHECKSUM_BITS']
 
         self.__preamble = preamble
         self.__seq_id = seq_id
@@ -406,34 +433,110 @@ class ASK_Demodulator:
         return baseband_sig
 
 
-class frameDetector:
+class FrameDetector:
+    """Implements a block to detect 16-bit network frames
+       from sample captures. 
 
-    def __init__(self, barker_seq):
-        self.__barker_seq = barker_seq
+       Inputs
+       ------
+       * barker_seq (int):                  Preamble/Barker sequence, to detect start of the frame.
+       * crc_polynomial (int):              CRC polynomial used to encode the payload in the frame.
+                                              Used to check the integrity of received frame.
 
-    def extractFrame(self, indexes, samples):
+       Attributes
+       ----------
+       * barker_seq (int):                 Returns the barker sequence to which detector is tuned to.
+       * crc_polynomial (int):              Returns the CRC polynomial.
+    """
+    def __init__(self, barker_seq, crc_polynomial):
+        
+        if barker_seq != int(barker_seq):
+            raise TypeError("Expected premable to be type int. Got: %s."%(type(barker_seq)))
+        
+        if crc_polynomial != int(crc_polynomial):
+            raise TypeError("Expected preamble of type int. Got: %s."%(type(crc_polynomial)))
+            
+        if barker_seq < 0:
+            raise ValueError("Expected preamble to be < 0. Got: %d."%(barker_seq))
+
+        self.__barker_seq = str2list(dec2bin(int(barker_seq), __CONSTANTS__['FRAME_PREAMBLE_BITS']), int)
+        
+        if len(self.__barker_seq) != __CONSTANTS__['FRAME_PREAMBLE_BITS']:
+            raise ValueError("Expected preamble of size 5. Got: %d."%(self.__barker_seq.size))
+
+        self.__crc_polynomial = int(crc_polynomial)
+    
+    @property
+    def barker_seq(self):
+        """Returns the barker sequence/premable to which currently
+           frame detector is tuned to.
+        """
+        return bit2dec(self.__barker_seq) 
+
+    @property
+    def crc_polynomial(self):
+        """Returns the CRC polynomial in use to verify the integrity 
+           of the detected frames.
+        """
+        return self.__crc_polynomial
+    
+    def __extractFrame(self, indexes, samples):
+        """Returns the detected frames at given index(s) 
+           from the sample captures by wrapping 
+           it in class of Frame.
+
+           Inputs
+           ------
+           * indexes (list):                           The position of the start of frames in 
+                                                        sample captures.
+           * samples (np.array or list):               Sample captures.
+
+           Returns
+           -------
+           * (list of type class Frame):               Returns a list of type class Frames.
+                                                         If no frames found, returns an empty list.
+        """
         frames = []
         for index in indexes:
-            frame_data = samples[index:index+11]
-            if frame_data.shape[0] < 11:
+            frame_data = samples[index:index + __CONSTANTS__['FRAME_CONTENT_BITS']]
+            if frame_data.shape[0] < __CONSTANTS__['FRAME_CONTENT_BITS']:
                 continue
             
-            seq_id = frame_data[0:2]
-            payload = frame_data[2:2+6]
-            crc = frame_data[8:8+3]
-            frames.append(Frame(bit2dec(seq_id), bit2dec(payload), bit2dec(crc)))
+            seq_id = frame_data[0:__CONSTANTS__['FRAME_SEQ_ID_BITS']]
+            payload = frame_data[__CONSTANTS__['FRAME_SEQ_ID_BITS']:__CONSTANTS__['FRAME_SEQ_ID_BITS'] + __CONSTANTS__['FRAME_PAYLOAD_BITS']]
+            checksum = frame_data[__CONSTANTS__['FRAME_PAYLOAD_AND_SEQ_ID_BITS']:__CONSTANTS__['FRAME_PAYLOAD_AND_SEQ_ID_BITS'] + __CONSTANTS__['FRAME_CHECKSUM_BITS']]
+            frames.append(Frame(preamble=self.barker_seq,
+                                seq_id=bit2dec(seq_id), 
+                                payload=bit2dec(payload),
+                                checksum=bit2dec(checksum),
+                                crc_polynomial=self.crc_polynomial))
         return frames
       
     def step(self, samples):
+        """Detects the frames in the sample captures and
+           returns a list of detected frames.
         
-        # Detect start for frame in the capture
+        Inputs
+        ------
+        * samples (np.array of type np.int):                  Samples captures.
+
+        Returns
+        * (list with objects of type class Frame):            Returns detected frames.
+                                                                Returns empty list, if no frame are found.
+        """
+        # Detect start for frame in the sample captures.
+        """
+        Note: 
+            Don't use self.barker_seq function here.
+            It returns the preamble in integer format.
+        """
+        samples = np.array(samples, dtype=np.int8)
         detected_frame_idxs = search_sequence_cv2(samples, self.__barker_seq)
-        
-        # Offset the starting of the frame based upon the preamble size
+
+        # Offset the starting of the frame based upon the preamble size.
         for idx, value in enumerate(detected_frame_idxs):
             detected_frame_idxs[idx] = value + len(self.__barker_seq)
         
-        # Extract frames from the capture
-        extracted_frames = self.extractFrame(detected_frame_idxs, samples)
-        
+        # Extract frames from the sample captures
+        extracted_frames = self.__extractFrame(detected_frame_idxs, samples)
         return extracted_frames
