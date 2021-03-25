@@ -466,6 +466,11 @@ class FrameDetector:
 
         self.__crc_polynomial = int(crc_polynomial)
     
+    def __repr__(self):
+        return "<FrameDetector, at 0x%x>: Barker Seq: %d, CRC Polynomial: %d."%(id(self),
+                                                                                self.barker_seq,
+                                                                                self.crc_polynomial)
+    
     @property
     def barker_seq(self):
         """Returns the barker sequence/premable to which currently

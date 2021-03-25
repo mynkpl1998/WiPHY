@@ -177,3 +177,4 @@ def test_FrameDetector():
     assert out[0].checksum == 3
     assert out[0].is_checksum_valid == True
 
+    #print(f1)
