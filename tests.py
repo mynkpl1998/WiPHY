@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from utils import bit2dec, bit2str, str2dec, dec2bin, str2list
-from utils import search_sequence_cv2, Frame, Muller, ASK_Demodulator, FrameDetector
+from WiPHY.rx import ASK_Rx
+from WiPHY.utils import bit2dec, bit2str, str2dec, dec2bin, str2list
+from WiPHY.utils import search_sequence_cv2, Frame, Muller, ASK_Demodulator, FrameDetector
 
 def test_bit2dec():
     test_data = np.random.randint(0, 100, size=20)
@@ -178,3 +179,41 @@ def test_FrameDetector():
     assert out[0].is_checksum_valid == True
 
     #print(f1)
+
+def test_ASK_Rx():
+    sample_rate = 245e3
+    center_freq = 315e6
+    gain = 'auto'
+    log_captures = True
+    freq_corr = -207
+    symbol_dur = 0.01
+
+    barker_seq = 29
+    crc_polynomial = 11
+    alpha = 0.7
+    decision_thershold = 0.1
+
+    radio = ASK_Rx(sample_rate=sample_rate,
+                   center_freq=center_freq,
+                   gain=gain,
+                   symbol_dur=symbol_dur, 
+                   log_captures=log_captures,
+                   freq_corr=freq_corr,
+                   alpha=alpha,
+                   decision_thershold=decision_thershold,
+                   barker_seq=barker_seq,
+                   crc_polynomial=crc_polynomial)
+                
+    assert radio.symbol_dur == symbol_dur
+    assert radio.sample_rate == sample_rate
+    assert radio.center_freq == center_freq
+    assert radio.log_captues == log_captures
+    assert radio.freq_corr == freq_corr
+    assert radio.barker_seq == barker_seq
+    assert radio.decision_thershold == decision_thershold
+    assert radio.crc_polynomial == crc_polynomial
+    assert radio.alpha == alpha
+
+    radio.cleanup()
+
+test_ASK_Rx()

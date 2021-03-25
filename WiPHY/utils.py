@@ -1,4 +1,5 @@
 import cv2
+import yaml
 import numpy as np
 from cv2 import matchTemplate as cv2m
 
@@ -39,6 +40,22 @@ def crc_check(input_bitstring, polynomial_bitstring, check_value):
             input_padded_array[cur_shift + i] \
             = str(int(polynomial_bitstring[i] != input_padded_array[cur_shift + i]))
     return ('1' not in ''.join(input_padded_array)[len_input:])
+
+def readYaml(file_path):
+    """Read the yaml file and returns the content
+       in the python dict.
+
+       Inputs
+       ------
+       * file_path (str):                      Yaml file path to read.
+
+       Returns
+       -------
+       (dict):                                 Returns YAML file contents.
+    """
+    with open(file_path, "r") as handle:
+        configDict = yaml.load(handle, Loader=yaml.FullLoader)
+    return configDict
 
 def bit2dec(bit_str):
     """Converts the list of ones and zeros to 

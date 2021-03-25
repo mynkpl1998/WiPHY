@@ -4,5 +4,15 @@ sdr_settings:
   freq_corr: -207
   gain: 'auto'
   log_captures: true
+  capture_size: 8192
+  baseband_symbol_dur: 1e-3
 
+time_sync:
+  alpha: 0.1
 
+ask_demodulator:
+  decision_thershold: 0.6
+
+frame_detector:
+  crc_polynomial: 13
+  barker_seq: 29
