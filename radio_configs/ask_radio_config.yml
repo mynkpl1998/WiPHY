@@ -4,7 +4,7 @@ sdr_settings:
   freq_corr: -207
   gain: 'auto'
   log_captures: true
-  capture_size: 8192
+  capture_len: 8192
   baseband_symbol_dur: 1e-3
 
 time_sync:

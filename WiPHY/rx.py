@@ -20,13 +20,14 @@ class ASK_Rx():
        * gain (float or str):                     SDR gain.
        * log_captures (bool):                     Enables/Disables the capture logging after each
                                                     processing blocks.
+       * capture_len (int):                       Sample capture length.
        * alpha (float):                           Update/Learning rate. Used by time sync block.
        * decision_thershold (float):              ASK demodulator decision thershold. Used by ASK 
                                                     demodulator block
        * barker_seq (int):                        Barker seq to use for frame detection. Used by Frame
                                                     detector block.
        * crc_polynomial (int):                    CRC Polynomial to use for frame detection. Used by Frame
-                                                    detector block. 
+                                                    detector block.
        
        Attributes
        ----------
@@ -38,6 +39,7 @@ class ASK_Rx():
        * symbol_dur (float):                      Returns baseband symbol duration in seconds.
        * gain (float or str):                     Returns SDR gain.
        * log_capture (bool):                      Returns whther the capture logging is enabled/disabled.
+       * capture_len (int):                       Returns sample capture length.
        * alpha (float):                           Returns update/learning rate in use by time sync block.
        * decision_thershold (float):              Returns decision thershold in used by ASK 
                                                     demodulator block.
@@ -51,6 +53,7 @@ class ASK_Rx():
                  symbol_dur=1e-3, 
                  gain='auto', 
                  log_captures=False,
+                 capture_len=1024,
                  alpha=0.1,
                  decision_thershold=0.5,
                  barker_seq=29,
@@ -62,6 +65,7 @@ class ASK_Rx():
         self.__sym_dur = float(symbol_dur)
         self.__gain = gain
         self.__log_captues = bool(log_captures)
+        self.__capture_len = int(capture_len)
         self.__alpha = float(alpha)
         self.__decision_thershold = float(decision_thershold)
         self.__barker_seq = int(barker_seq)
@@ -82,9 +86,9 @@ class ASK_Rx():
         # Registers all the signal processing blocks.
         self.__processing_blocks = [
             #self.low_pass_filtering,
-            #self.time_sync,
-            #self.ask_demod,
-            #self.frame_detection
+            self.time_sync,
+            self.ask_demod,
+            self.frame_detection
         ]
 
         # Book keeping variables.
@@ -195,6 +199,12 @@ class ASK_Rx():
         """Return whether sample capture logging is enabled/disabled
         """
         return self.__log_captues
+    
+    @property
+    def capture_len(self):
+        """Returns sample capture length.
+        """
+        return self.__capture_len
 	
     def low_pass_filtering(self, input_samples):
         return self.__low_pass_filter.apply(input_samples)
@@ -203,7 +213,7 @@ class ASK_Rx():
         return self.__time_sync_block.sync(input_samples)
 
     def ask_demod(self, input_samples):
-        return self.__modulator.demod(input_samples)
+        return self.__modulator.demodulate(np.abs(input_samples))
 
     def frame_detection(self, input_samples):
         return self.__frameDetector.step(input_samples)
@@ -214,7 +224,8 @@ class ASK_Rx():
         return (self.__sdr.sample_rate,
                 self.__sdr.center_freq,
                 self.freq_corr,
-                self.__sdr.gain)
+                self.__sdr.gain,
+                self.capture_len)
 
     def __tune_sdr(self, sample_rate, center_freq, freq_corr, gain):
         """Tunes the radio to desired settings.
@@ -236,13 +247,13 @@ class ASK_Rx():
         if freq_corr != 0:
             self.__sdr.freq_correction = freq_corr
         self.__sdr.gain = gain
-        msg.good("SDR is tuned to sample rate: %d, center freq: %d, freq corr: %d, gain %s."%(self.read_sdr_settings()))
+        msg.good("SDR is tuned to sample rate: %d, center freq: %d, freq corr: %d, gain %s, capture len: %d."%(self.read_sdr_settings()))
 
     def step(self):
         self.__stage_processing_time_step += 1
         start = time.process_time()
         
-        samples = self.__sdr.read_samples(8192)
+        samples = self.__sdr.read_samples(self.capture_len)
         input = samples
         
         if self.log_captues:

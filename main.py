@@ -22,6 +22,7 @@ if  __name__ == "__main__":
 		gain = int(gain)
 	log_captues = bool(radio_config_dict['sdr_settings']['log_captures'])
 	baseband_symbol_dur = float(radio_config_dict['sdr_settings']['baseband_symbol_dur'])
+	capture_len = int(radio_config_dict['sdr_settings']['capture_len'])
 	
 	# Time Sync block settings.
 	alpha = float(radio_config_dict['time_sync']['alpha'])
@@ -31,8 +32,8 @@ if  __name__ == "__main__":
 	barker_seq = int(radio_config_dict['frame_detector']['barker_seq'])
 
 	# ASK Demodulator settings.
-	decision_thershold = int(radio_config_dict['ask_demodulator']['decision_thershold'])
-
+	decision_thershold = float(radio_config_dict['ask_demodulator']['decision_thershold'])
+	
 	# Create radio object.
 	radio = ASK_Rx(sample_rate=sample_rate,
 	               center_freq=center_freq,
@@ -43,4 +44,7 @@ if  __name__ == "__main__":
 				   alpha=alpha,
 				   decision_thershold=decision_thershold,
 				   barker_seq=barker_seq,
-				   crc_polynomial=crc_polynomial)
+				   crc_polynomial=crc_polynomial,
+				   capture_len=capture_len)
+	
+	radio.listen()
