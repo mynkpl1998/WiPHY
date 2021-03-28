@@ -149,6 +149,10 @@ if __name__ == '__main__':
                 data = pickle.load(fileHandler)
                 fileHandler.close()
                 device_info_string = "Capture time stamp: %s.\n"%(data['cature_time_stamp'])
+                device_info_string += "Downlink performance => FER: %.3f, Frames detected: %d, Failed Frames: %d. \n"%(data['rx_performance_metrics']['fer'],
+                                                                                                                      data['rx_performance_metrics']['frames_detected'],
+                                                                                                                      data['rx_performance_metrics']['failed_frames'])
+                
                 device_info_string += 'SDR Settings => Sample rate: %d, Center freq :%d, Gain: %s, Freq Corr: %d, Capture Len: %d.'%(data['sdr_settings']['sample_rate'],
                                                                                                                                      data['sdr_settings']['center_freq'],
                                                                                                                                      data['sdr_settings']['gain'],

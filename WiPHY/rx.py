@@ -89,12 +89,16 @@ class ASK_Rx():
             #self.low_pass_filtering,
             self.time_sync,
             self.ask_demod,
-            self.frame_detection
+            self.frame_detection,
+            self.calculate_performance_metrics
         ]
 
         # Book keeping variables.
         self.__stage_processing_time_mean = 0.0
         self.__stage_processing_time_step = 0
+        self.__frame_error_rate = 0.0
+        self.__frame_count = 0
+        self.__frame_error_count = 0
 
         if self.log_captues:
             self.sample_captures_data = {}
@@ -109,6 +113,10 @@ class ASK_Rx():
             self.sample_captures_data['sdr_settings']['crc_polynomial'] = self.crc_polynomial
             self.sample_captures_data['sdr_settings']['decision_thershold'] = self.decision_thershold
             self.sample_captures_data['sdr_settings']['barker_seq'] = self.barker_seq
+            self.sample_captures_data['rx_performance_metrics'] = {}
+            self.sample_captures_data['rx_performance_metrics']['frames_detected'] = 0
+            self.sample_captures_data['rx_performance_metrics']['failed_frames'] = 0
+            self.sample_captures_data['rx_performance_metrics']['fer'] = 0
             
             self.sample_captures_data['raw'] = []
             self.sample_captures_data[self.low_pass_filtering.__name__] = []
@@ -219,6 +227,14 @@ class ASK_Rx():
 
     def frame_detection(self, input_samples):
         return self.__frameDetector.step(input_samples)
+    
+    def calculate_performance_metrics(self, input_frames):
+        self.__frame_count += len(input_frames)
+        for frame in input_frames:
+            if not frame.is_checksum_valid:
+                self.__frame_error_count += 1
+        self.__frame_error_rate = self.__frame_error_count/self.__frame_count
+        return self.__frame_error_rate
 
     def read_sdr_settings(self, ):
         if self.__sdr is None:
@@ -264,7 +280,7 @@ class ASK_Rx():
         for operation in self.__processing_blocks:
             output = operation(input)
 
-            if self.log_captues:
+            if self.log_captues and operation.__name__ in list(self.sample_captures_data.keys()):
                 self.sample_captures_data[operation.__name__].append(output)	
             input = output
 
@@ -286,6 +302,9 @@ class ASK_Rx():
             msg.info("Closed connection to the device. Avg step proc time %.6fs"%(self.__stage_processing_time_mean))
             self.__sdr = None
             if self.log_captues:
+                self.sample_captures_data['rx_performance_metrics']['frames_detected'] = self.__frame_count
+                self.sample_captures_data['rx_performance_metrics']['failed_frames'] = self.__frame_error_count
+                self.sample_captures_data['rx_performance_metrics']['fer'] = self.__frame_error_rate
                 fileHanlder = open('samples_captures.pkl', 'wb')
                 pickle.dump(self.sample_captures_data, fileHanlder)
                 fileHanlder.close()
