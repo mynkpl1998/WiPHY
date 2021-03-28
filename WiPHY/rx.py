@@ -4,6 +4,7 @@ import atexit
 import numpy as np
 from wasabi import msg
 from rtlsdr import RtlSdr
+from datetime import datetime
 import matplotlib.pyplot as plt
 from WiPHY.utils import lowPassFilter, Muller, ASK_Demodulator, FrameDetector
 
@@ -97,6 +98,7 @@ class ASK_Rx():
 
         if self.log_captues:
             self.sample_captures_data = {}
+            self.sample_captures_data['cature_time_stamp'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             self.sample_captures_data['sdr_settings'] = {}
             self.sample_captures_data['sdr_settings']['sample_rate'] = self.sample_rate
             self.sample_captures_data['sdr_settings']['center_freq'] = self.center_freq

@@ -7,6 +7,10 @@ sdr_settings:
   capture_len: 8192
   baseband_symbol_dur: 1e-3
 
+tx_settings:
+  data_pin: 12
+  enbale_tx_debug_prints: false
+
 time_sync:
   alpha: 0.1
 

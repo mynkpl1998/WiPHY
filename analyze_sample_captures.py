@@ -19,7 +19,7 @@ data = None
 
 layout = [
     [sg.Text("Capture File: "), sg.Input(key='_CAPTURE_FILE_'), sg.FilesBrowse(), sg.Button("Load", key='_CAPTURE_FILE_LOAD_')],
-    [sg.Multiline(size=(140, 6), key='--SETTINGS_TEXT--', autoscroll=True)],
+    [sg.Multiline(size=(140, 7), key='--SETTINGS_TEXT--', autoscroll=True)],
     [sg.Text('Capture Number:'), sg.Combo(list(range(0, 3000)), key='--FRAME_NUM_VAL--'), sg.Button('Analyze', key='--FRAME_NUM--')],
     [sg.TabGroup(
         [
@@ -148,7 +148,8 @@ if __name__ == '__main__':
                 fileHandler = open(values['_CAPTURE_FILE_'], "rb")
                 data = pickle.load(fileHandler)
                 fileHandler.close()
-                device_info_string = 'SDR Settings => Sample rate: %d, Center freq :%d, Gain: %s, Freq Corr: %d, Capture Len: %d.'%(data['sdr_settings']['sample_rate'],
+                device_info_string = "Capture time stamp: %s.\n"%(data['cature_time_stamp'])
+                device_info_string += 'SDR Settings => Sample rate: %d, Center freq :%d, Gain: %s, Freq Corr: %d, Capture Len: %d.'%(data['sdr_settings']['sample_rate'],
                                                                                                                                      data['sdr_settings']['center_freq'],
                                                                                                                                      data['sdr_settings']['gain'],
                                                                                                                                      data['sdr_settings']['freq_corr'],
