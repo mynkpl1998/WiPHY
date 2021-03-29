@@ -225,6 +225,6 @@ Thumbs.db #thumbnail cache on Windows
 .prof
 
 # pickle files
-.pkl
+*.pkl
 
 # End of https://www.toptal.com/developers/gitignore/api/python,c,c++
