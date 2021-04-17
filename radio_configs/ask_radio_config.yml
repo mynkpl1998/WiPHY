@@ -4,13 +4,16 @@ sdr_settings:
   freq_corr: -207
   gain: 'auto'
   log_captures: true
-  capture_len: 8192
+  capture_len: 16384
   baseband_symbol_dur: 1e-3
   sample_buffer_size: 100
 
 tx_settings:
   data_pin: 12
-  enbale_tx_debug_prints: false
+  arduino_comm_baud_rate: 115200
+  arduino_comm_timeout: 1
+  transmit_retries: 5
+  comm_port: '/dev/ttyACM0'
 
 time_sync:
   alpha: 0.1
