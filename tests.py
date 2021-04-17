@@ -78,6 +78,7 @@ def test_Frame():
     assert frame1.payload == 63
     assert frame1.is_checksum_valid == True
     assert frame1.crc_polynomial == '1101'
+    assert frame1.get_frame_byte_string() == 'ëü'
 
     frame1 = Frame(preamble=29, 
                    seq_id=1,
@@ -90,6 +91,7 @@ def test_Frame():
     assert frame1.payload == 63
     assert frame1.is_checksum_valid == False
     assert frame1.crc_polynomial == '1101'
+    assert frame1.get_frame_byte_string() == 'ëú'
     #print(frame1)
 
 
@@ -217,3 +219,8 @@ def test_ASK_Rx():
     radio.cleanup()
 
 test_ASK_Rx()
+test_FrameDetector()
+test_ASK_Demodulator()
+test_Muller()
+test_Frame()
+test_bit2str()

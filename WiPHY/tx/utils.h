@@ -29,5 +29,6 @@ void transmit_frame();
 void write_frame_to_tx_buffer();
 void print_frame_from_tx_buffer();
 uint8_t bit2dec(uint8_t start_index, uint8_t end_index, uint8_t offset);
+uint8_t get_checksum(uint8_t payload, uint8_t seq_id);
 
 #endif

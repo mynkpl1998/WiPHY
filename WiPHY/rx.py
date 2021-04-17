@@ -6,6 +6,7 @@ from wasabi import msg
 from rtlsdr import RtlSdr
 from datetime import datetime
 import matplotlib.pyplot as plt
+from multiprocessing import Queue, Process, get_context, set_start_method
 from WiPHY.utils import lowPassFilter, Muller, ASK_Demodulator, FrameDetector
 
 class ASK_Rx():
@@ -29,7 +30,8 @@ class ASK_Rx():
                                                     detector block.
        * crc_polynomial (int):                    CRC Polynomial to use for frame detection. Used by Frame
                                                     detector block.
-       
+       * sample_buffer_size (int):                Sample buffer queue max length.
+
        Attributes
        ----------
        * sample_rate (int):                       Returns sample rate to which device is tuned to, 
@@ -58,7 +60,8 @@ class ASK_Rx():
                  alpha=0.1,
                  decision_thershold=0.5,
                  barker_seq=29,
-                 crc_polynomial=13):
+                 crc_polynomial=13,
+                 sample_buffer_size=1000):
         
         self.__sample_rate = int(sample_rate)
         self.__center_freq = int(center_freq)
@@ -83,6 +86,10 @@ class ASK_Rx():
         # Register the clean up function.
         # This function will close the SDR connection if case anything goes wrong.
         atexit.register(self.cleanup)
+
+        # Sample capture buffer
+        #set_start_method('spawn')
+        self.__sample_captures_buffer = Queue(maxsize=sample_buffer_size)
 
         # Registers all the signal processing blocks.
         self.__processing_blocks = [
@@ -215,7 +222,18 @@ class ASK_Rx():
         """Returns sample capture length.
         """
         return self.__capture_len
-	
+    
+    def __sample_capture_thread(self,):
+        while True:
+            start = time.process_time()
+            if not self.__sample_captures_buffer.full():
+                self.__sample_captures_buffer.put(self.__sdr.read_samples(self.capture_len))
+                print("Queue Size: ", self.__sample_captures_buffer.qsize())
+            else:
+                #print("Queue is full !", self.__sample_captures_buffer.qsize())
+                pass
+            #print(time.process_time() - start)
+        
     def low_pass_filtering(self, input_samples):
         return self.__low_pass_filter.apply(input_samples)
 
@@ -233,7 +251,7 @@ class ASK_Rx():
         for frame in input_frames:
             if not frame.is_checksum_valid:
                 self.__frame_error_count += 1
-        self.__frame_error_rate = self.__frame_error_count/self.__frame_count
+        self.__frame_error_rate = self.__frame_error_count/(self.__frame_count + 1e-12)
         return self.__frame_error_rate
 
     def read_sdr_settings(self, ):
@@ -289,6 +307,58 @@ class ASK_Rx():
         self.__stage_processing_time_mean = (((self.__stage_processing_time_step-1)/self.__stage_processing_time_step) * self.__stage_processing_time_mean) \
             + ((1/self.__stage_processing_time_step) * (end - start))
 
+    def step_parallel(self):
+
+        while True:
+            start = time.process_time()
+            self.__stage_processing_time_step += 1
+
+            input = self.__sample_captures_buffer.get()
+
+            if self.log_captues:
+                self.sample_captures_data['raw'].append(input)
+            
+            for operation in self.__processing_blocks:
+                output = operation(input)
+
+                if self.log_captues and operation.__name__ in list(self.sample_captures_data.keys()):
+                    self.sample_captures_data[operation.__name__].append(output)	
+                input = output
+
+            end = time.process_time()
+            print(end - start)
+            
+            self.__stage_processing_time_mean = (((self.__stage_processing_time_step-1)/self.__stage_processing_time_step) * self.__stage_processing_time_mean) \
+                + ((1/self.__stage_processing_time_step) * (end - start))
+
+    def listen_parallel(self):
+
+        # Start a seperate process for collecting  
+        # sample captures in buffer.
+
+        sample_capture_process = Process(target=self.__sample_capture_thread)
+        sample_capture_process.daemon = True
+        sample_capture_process.start()
+        
+        while self.__sample_captures_buffer.qsize() < 50:
+            #print("Waiting for the buffer to fill !!", self.__sample_captures_buffer.qsize())
+            pass
+        
+        fw_processing_process = Process(target=self.step_parallel)
+        fw_processing_process.daemon = True
+        fw_processing_process.start()
+
+        try:
+            '''
+            while True:
+                self.step_parallel()
+            '''
+            sample_capture_process.join()
+            fw_processing_process.join()
+        except KeyboardInterrupt:
+            sample_capture_process.terminate()
+            print("Ended sample capture process")
+    
     def listen(self):
         try:
             while True:

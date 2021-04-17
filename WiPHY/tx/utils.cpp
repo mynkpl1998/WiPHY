@@ -17,7 +17,7 @@ bool populate_frame(uint8_t payload, uint8_t seq_id)
    frame.preamble = PREAMBLE;
    frame.frame_seq = seq_id;
    frame.payload = payload;
-   frame.checksum = CRC3_XOR6_LOOKUP[frame.payload];
+   frame.checksum = get_checksum(frame.payload, frame.frame_seq);
    return true;
 }
 
@@ -138,6 +138,15 @@ void print_frame_from_tx_buffer()
    #endif
 }
 
+uint8_t get_checksum(uint8_t payload, uint8_t seq_id)
+{
+  uint8_t masked_payload = (get_mask(PAYLOAD_LEN) & payload);
+  uint8_t masked_seq_id = get_mask(SEQ_ID_LEN) & seq_id;
+  masked_seq_id = masked_seq_id<<6;
+  uint8_t lookup = seq_id | masked_payload;
+  return CRC3_XOR6_LOOKUP[lookup];
+  
+}
 
 void transmit_frame()
 {

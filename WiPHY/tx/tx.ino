@@ -31,7 +31,7 @@ void setup() {
   frame.preamble = PREAMBLE;
   frame.frame_seq = 0;
   frame.payload = 0;
-  frame.checksum = CRC3_XOR6_LOOKUP[frame.payload];
+  frame.checksum = get_checksum(frame.payload, frame.frame_seq);
 
   /* Initialize tx transmit */
   payload = 0;

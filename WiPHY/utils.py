@@ -1,5 +1,6 @@
 import cv2
 import yaml
+import binascii
 import numpy as np
 from cv2 import matchTemplate as cv2m
 
@@ -280,9 +281,35 @@ class Frame:
     def __validate_checksum(self):
         """Checks the integrity of the payload.
         """
-        return crc_check(dec2bin(self.payload, self.__payload_len),
+        payload_mask = 0xFF
+        payload_mask = payload_mask>>(8-self.__payload_len)
+        merged_data = (self.seq_id<<6) | (self.payload & payload_mask)
+        return crc_check(dec2bin(merged_data, self.__payload_len + self.__seq_id_len),
                          self.crc_polynomial,
                          dec2bin(self.checksum, self.__checksum_len))
+    
+    def get_frame_bytes(self):
+        """Returns the frame content as sequence of bytes.
+        """
+        arr = dec2bin(self.__preamble, self.__preamble_len)
+        arr += dec2bin(self.__seq_id, self.__seq_id_len)
+        arr += dec2bin(self.__payload, self.__payload_len)
+        arr += dec2bin(self.__checksum, self.__checksum_len)
+        assert len(arr) == self.__preamble_len + self.__seq_id_len + self.__payload_len + self.__checksum_len
+        frame_seq = [int(arr[0:8],2), int(arr[8:16], 2)]
+        return frame_seq
+        
+    def get_frame_byte_string(self):
+        """Converts the frame in sequence of bits array and
+           returns the corresponding char array.
+        """
+        arr = dec2bin(self.__preamble, self.__preamble_len)
+        arr += dec2bin(self.__seq_id, self.__seq_id_len)
+        arr += dec2bin(self.__payload, self.__payload_len)
+        arr += dec2bin(self.__checksum, self.__checksum_len)
+        assert len(arr) == self.__preamble_len + self.__seq_id_len + self.__payload_len + self.__checksum_len
+        frame_str = chr(int(arr[0:8],2)) + chr(int(arr[8:16], 2))
+        return frame_str
 
     def get_frame_str(self):
         """Returns the frame structre in string format.

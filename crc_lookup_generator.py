@@ -64,11 +64,11 @@ def generate_radio_config_header(radio_config, out_path):
     header_str += "#define CHECKSUM_POLY " + str(checksum_poly) + "\n"
     header_str += "#define ENABLE_TX_DEBUG_PRINTS " + str(enable_tx_debugging) + "\n"
     
-    header_str += "\n// 3-bits CRC lookup table for 6-bits payload values. \n"
+    header_str += "\n// 3-bits CRC lookup table for 8-bits payload values. \n"
 
     # Start generating look up table
-    crc_lookup_table = get_crc_data(payload_len, checksum_poly)
-    header_str += "\nstatic uint8_t CRC3_XOR6_LOOKUP[64] = { "
+    crc_lookup_table = get_crc_data(payload_len + seq_id_len, checksum_poly)
+    header_str += "\nstatic uint8_t CRC3_XOR6_LOOKUP[256] = { "
     for payload in crc_lookup_table:
         header_str += str(crc_lookup_table[payload]) + ", "
     header_str += "};"
@@ -97,7 +97,7 @@ def generate_header(data, path):
 
     header_code += "};\n"
 
-    fileHandler = open(path + "CRC3_XOR6.h", "w")
+    fileHandler = open(path + "CRC3_XOR8.h", "w")
     fileHandler.write(header_code)
     fileHandler.close()
 
@@ -109,19 +109,4 @@ if __name__ == "__main__":
     # Radio configuration data
     radio_config_dict = readYaml(args.radio_config)
 
-    '''
-    # CRC configuration
-    data_bits = 6
-    poly = dec2bin(args.crc_polynomial, 4)
-    all_data_bits = itertools.product([0,1], repeat=data_bits)
-    
-    gen_lookup = {}
-    for data in all_data_bits:
-        data_dec = bit2dec(data)
-        data_str = bit2str(data)
-        out = str2dec(crc_remainder(data_str, poly, '0'))
-        gen_lookup[data_dec] = out
-        
-    generate_header(gen_lookup, args.out_path)
-    '''
     generate_radio_config_header(radio_config_dict, args.out_path)

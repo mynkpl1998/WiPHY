@@ -23,6 +23,7 @@ if  __name__ == "__main__":
 	log_captues = bool(radio_config_dict['sdr_settings']['log_captures'])
 	baseband_symbol_dur = float(radio_config_dict['sdr_settings']['baseband_symbol_dur'])
 	capture_len = int(radio_config_dict['sdr_settings']['capture_len'])
+	sample_buffer_size = int(radio_config_dict['sdr_settings']['sample_buffer_size'])
 	
 	# Time Sync block settings.
 	alpha = float(radio_config_dict['time_sync']['alpha'])
@@ -45,6 +46,7 @@ if  __name__ == "__main__":
 				   decision_thershold=decision_thershold,
 				   barker_seq=barker_seq,
 				   crc_polynomial=crc_polynomial,
-				   capture_len=capture_len)
+				   capture_len=capture_len,
+				   sample_buffer_size=sample_buffer_size)
 	
 	radio.listen()

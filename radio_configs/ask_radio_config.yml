@@ -6,6 +6,7 @@ sdr_settings:
   log_captures: true
   capture_len: 8192
   baseband_symbol_dur: 1e-3
+  sample_buffer_size: 100
 
 tx_settings:
   data_pin: 12
