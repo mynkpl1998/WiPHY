@@ -14,6 +14,7 @@ if  __name__ == "__main__":
     # Load radio configuration file.
     radio_config_dict = readYaml(file_path=args.radio_config)
 
+    # Get tx settings.
     comm_port = str(radio_config_dict['tx_settings']['comm_port'])
     baud_rate = int(radio_config_dict['tx_settings']['arduino_comm_baud_rate'])
     timeout = float(radio_config_dict['tx_settings']['arduino_comm_timeout'])
@@ -29,7 +30,7 @@ if  __name__ == "__main__":
                    barker_seq=barker_seq,
                    crc_polynomial=crc_polynomial)
     
-    
+    # Start transmitting the frame.
     payload = 0
     seq_id = 0
     while True:

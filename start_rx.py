@@ -13,7 +13,7 @@ if  __name__ == "__main__":
 	# Load radio configuration file.
 	radio_config_dict = readYaml(file_path=args.radio_config)
 
-	# Get SDR settings.
+	# Get SDR and rx settings.
 	sample_rate = int(float(radio_config_dict['sdr_settings']['sample_rate']))
 	center_freq = int(float(radio_config_dict['sdr_settings']['center_freq']))
 	freq_corr = int(radio_config_dict['sdr_settings']['freq_corr'])
@@ -49,6 +49,7 @@ if  __name__ == "__main__":
 				   capture_len=capture_len,
 				   max_logs_buffer_size=logs_buffer_max_size)
 	
+	# Start capturing the frames.
 	try:
 		while True:
 			radio.step()
