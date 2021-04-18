@@ -18,8 +18,8 @@ if  __name__ == "__main__":
     baud_rate = int(radio_config_dict['tx_settings']['arduino_comm_baud_rate'])
     timeout = float(radio_config_dict['tx_settings']['arduino_comm_timeout'])
     retries_count = int(radio_config_dict['tx_settings']['transmit_retries'])
-    crc_polynomial = int(radio_config_dict['frame_detector']['crc_polynomial'])
-    barker_seq = int(radio_config_dict['frame_detector']['barker_seq'])
+    crc_polynomial = int(radio_config_dict['common_settings']['crc_polynomial'])
+    barker_seq = int(radio_config_dict['common_settings']['barker_seq'])
 
     # Create tx object
     radio = ASK_Tx(comm_port=comm_port,
@@ -41,4 +41,4 @@ if  __name__ == "__main__":
         if payload >= 2**6:
             payload = 0
         
-    
+    radio.close()

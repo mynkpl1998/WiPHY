@@ -23,17 +23,17 @@ if  __name__ == "__main__":
 	log_captues = bool(radio_config_dict['sdr_settings']['log_captures'])
 	baseband_symbol_dur = float(radio_config_dict['sdr_settings']['baseband_symbol_dur'])
 	capture_len = int(radio_config_dict['sdr_settings']['capture_len'])
-	sample_buffer_size = int(radio_config_dict['sdr_settings']['sample_buffer_size'])
+	logs_buffer_max_size = int(radio_config_dict['sdr_settings']['max_logs_buffer_size'])
 	
 	# Time Sync block settings.
-	alpha = float(radio_config_dict['time_sync']['alpha'])
+	alpha = float(radio_config_dict['rx_settings']['time_sync']['alpha'])
 
 	# Frame Detector block settings.
-	crc_polynomial = int(radio_config_dict['frame_detector']['crc_polynomial'])
-	barker_seq = int(radio_config_dict['frame_detector']['barker_seq'])
+	crc_polynomial = int(radio_config_dict['common_settings']['crc_polynomial'])
+	barker_seq = int(radio_config_dict['common_settings']['barker_seq'])
 
 	# ASK Demodulator settings.
-	decision_thershold = float(radio_config_dict['ask_demodulator']['decision_thershold'])
+	decision_thershold = float(radio_config_dict['rx_settings']['ask_demodulator']['decision_thershold'])
 	
 	# Create radio object.
 	radio = ASK_Rx(sample_rate=sample_rate,
@@ -47,6 +47,10 @@ if  __name__ == "__main__":
 				   barker_seq=barker_seq,
 				   crc_polynomial=crc_polynomial,
 				   capture_len=capture_len,
-				   sample_buffer_size=sample_buffer_size)
+				   max_logs_buffer_size=logs_buffer_max_size)
 	
-	radio.listen()
+	try:
+		while True:
+			radio.step()
+	except KeyboardInterrupt:
+		pass
