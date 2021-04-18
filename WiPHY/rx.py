@@ -7,7 +7,9 @@ from rtlsdr import RtlSdr
 from datetime import datetime
 from collections import deque
 import matplotlib.pyplot as plt
+from multiprocessing import Process, Value, Manager
 from WiPHY.utils import lowPassFilter, Muller, ASK_Demodulator, FrameDetector
+manager = Manager()
 
 class ASK_Rx():
     """Implements a Amplitude Shift Keying RX using
@@ -49,6 +51,8 @@ class ASK_Rx():
        * barker_seq (int):                        Returns barker seq in use by frame detection block.
        * crc_polynomial (int):                    Returns CRC polynomial in use by frame detector block. 
        * max_logs_buffer_size (int):              Returns the maximum size of the logs buffer. Default: 500.
+       * start_sample_capture_buffer (int):       Returns the buffer where start_sample_capturs API stores
+                                                    its data. 
     """
     
     def __init__(self, 
@@ -89,6 +93,11 @@ class ASK_Rx():
         # Register the clean up function.
         # This function will close the SDR connection if case anything goes wrong.
         atexit.register(self.cleanup)
+
+        # Space to store samples catured suing start_captures.
+        self.__start_sample_captures = manager.list()
+        self.__request_stop = Value('i', 0)
+        self.__process_id = None
 
         # Registers all the signal processing blocks.
         self.__processing_blocks = [
@@ -229,6 +238,13 @@ class ASK_Rx():
         """
         return self.__max_logs_buffer_size
     
+    @property
+    def start_sample_capture_buffer(self):
+        """Returns the buffer where start_sample_capturs API stores
+        its data.
+        """
+        return self.__start_sample_captures
+    
     def low_pass_filtering(self, input_samples):
         return self.__low_pass_filter.apply(input_samples)
 
@@ -279,6 +295,53 @@ class ASK_Rx():
             self.__sdr.freq_correction = freq_corr
         self.__sdr.gain = gain
         msg.good("SDR is tuned to sample rate: %d, center freq: %d, freq corr: %d, gain %s, capture len: %d."%(self.read_sdr_settings()))
+    
+    def __capture_thread(self, request_stop, buffer):
+        """Sample capture thread. Collects samples by calling
+        read_samples and stores them in shared buffer.
+        """
+        max_iter = 20
+        counter = 0
+        while True:
+            buffer.append(self.__sdr.read_samples(2048))
+            counter += 1
+            #print(len(buffer))
+            if request_stop.value == 1 or counter >= max_iter:
+                break
+
+        if counter >= max_iter:
+            raise RuntimeWarning("__capture_thread iterations reached maximum limit. Max: %d, Count: %d"%(max_iter, counter))
+
+    def start_captures(self):
+        """Starts capturing the samples until a stop is requested
+        by calling stop_captures.
+        """
+        # Intialization
+        self.__start_sample_captures[:] = []
+        assert len(self.start_sample_capture_buffer) == 0
+        self.__request_stop.value = 0
+        self.__process_id = None
+
+        # Start capturing process.
+        self.__process_id = Process(target=self.__capture_thread, args=(self.__request_stop, self.start_sample_capture_buffer))
+        self.__process_id.daemon = True
+        self.__process_id.start()
+    
+    def stop_captures(self):
+        """Requests to stop capturing samples which 
+        was started using start_captures API.
+        """
+
+        if self.__process_id is None:
+            raise RuntimeError("Failed to stop. Process ID is None. Either the start_capture wasn't called or it was overwritten.")
+
+        if self.__request_stop.value != 0:
+            raise RuntimeError("Failed to stop. Request stop is already True.")
+        
+        self.__request_stop.value = 1
+        self.__process_id.join()
+        self.__process_id.terminate()
+        self.__process_id = None
 
     def step(self):
         """Reads the sameple captures of specified length and 
@@ -318,6 +381,38 @@ class ASK_Rx():
 
         return frames_detected
     
+    def process_start_captures(self):
+        """Process the sample captures collected using start
+        capture API to find frames.
+        
+        Returns
+        -------
+        * list (utils.Frames)                              Returns the detected frames.
+                                                            Returns empty list if none found.
+        """
+
+        assert len(self.start_sample_capture_buffer) >= 1
+        merged_frames = np.hstack(self.start_sample_capture_buffer)
+        local_processing_blocks = self.__processing_blocks.copy()
+        
+        input = merged_frames
+        frames_detected = None
+
+        if self.log_captues:
+            self.sample_captures_data['raw'].append(merged_frames)
+
+        for operation in local_processing_blocks:
+            output = operation(input)
+            input = output
+
+            if operation == self.frame_detection:
+                frames_detected = output
+
+            if self.log_captues and operation.__name__ in list(self.sample_captures_data.keys()):
+                self.sample_captures_data[operation.__name__].append(output)
+
+        return output
+
     def cleanup(self):
         if self.__sdr is not None:
             self.__sdr.close()

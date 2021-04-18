@@ -1,3 +1,4 @@
+import time
 import argparse
 from WiPHY.rx import ASK_Rx
 from WiPHY.utils import readYaml
@@ -50,8 +51,16 @@ if  __name__ == "__main__":
 				   max_logs_buffer_size=logs_buffer_max_size)
 	
 	# Start capturing the frames.
+	'''
 	try:
 		while True:
 			radio.step()
 	except KeyboardInterrupt:
 		pass
+	'''
+	radio.start_captures()
+	time.sleep(0.5)
+	radio.stop_captures()
+	radio.process_start_captures()
+
+	

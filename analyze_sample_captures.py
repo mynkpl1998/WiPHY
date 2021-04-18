@@ -85,7 +85,7 @@ def plot_samples(frame_index):
 
     
     # Time Sync Constellation
-    time_sync_const_fig = plt.figure(figsize=(10, 6), dpi=100)
+    time_sync_const_fig = plt.figure(figsize=(10, 5), dpi=100)
     time_sync_const_axis = time_sync_const_fig.add_subplot(1, 1, 1)
     time_sync_const_fig.subplots_adjust(left=0.1, right=0.98, top=0.99, bottom=0.1)
     y = np.zeros(time_sync_samples.shape[0])
@@ -93,7 +93,8 @@ def plot_samples(frame_index):
     time_sync_const_axis.grid()
     time_sync_const_axis.set_xlim([-2.5, 2.5])
     time_sync_const_axis.set_ylim([-2.5, 2.5])
-
+    time_sync_const_axis.set_xlabel("In-Phase")
+    time_sync_const_axis.set_ylabel("Quadrature")
 
     # Base Band Signal
     baseband_sig_fig = plt.figure(figsize=(10, 3), dpi=100)
@@ -164,7 +165,7 @@ if __name__ == '__main__':
                 device_info_string += '\nFrame Detector Block Info => Barker seq: %d, CRC Polynomial: %d.'%(data['sdr_settings']['barker_seq'],
                                                                                                             data['sdr_settings']['crc_polynomial'])
                 window['--SETTINGS_TEXT--'].update(device_info_string)
-                window['--FRAME_NUM_VAL--'].update(values=list(range(0, len(data['raw']))))
+                window['--FRAME_NUM_VAL--'].update(values=list(range(0, len(data['raw']) )))
             
             if event == '--FRAME_NUM--':
                 if raw_samples_fig is not None:

@@ -41,5 +41,3 @@ if  __name__ == "__main__":
         payload += 1
         if payload >= 2**6:
             payload = 0
-        
-    radio.close()

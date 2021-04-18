@@ -23,5 +23,5 @@ rx_settings:
   time_sync:
     alpha: 0.1
   ask_demodulator:
-    decision_thershold: 0.6
+    decision_thershold: 0.7
   
