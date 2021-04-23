@@ -11,7 +11,7 @@ sdr_settings:
 tx_settings:
   data_pin: 12
   arduino_comm_baud_rate: 115200
-  arduino_comm_timeout: 1
+  arduino_comm_timeout: 5
   transmit_retries: 5
   comm_port: '/dev/ttyACM0'
 

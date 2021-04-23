@@ -41,7 +41,7 @@ void loop()
     Serial.readBytes(serial_buffer, 3);
     
     // Detect the start of the frame
-    if( serial_buffer[0] = 82 )
+    if( serial_buffer[0] == 'R' )
     {
        serial_out_buffer[0] = 65;
        serial_out_buffer[1] = serial_buffer[1];

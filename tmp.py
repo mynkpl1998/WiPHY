@@ -1,4 +1,5 @@
 from multiprocessing import Queue, Process
+from WiPHY.utils import crc_remainder
 
 def write_to_queue(queue):
     for i in range(0, 10**6):
@@ -10,6 +11,7 @@ def read_from_queue(queue):
         msg = queue.get()
     
 if __name__ == "__main__":
+    """
     pqueue = Queue(maxsize=1000)
     target_functions = [write_to_queue, read_from_queue]
     processes = []
@@ -22,3 +24,5 @@ if __name__ == "__main__":
     for p in processes:
         p.join()
     print("Done scheduling.")
+    """
+    print(crc_remainder("01111111", "1101", "0"))

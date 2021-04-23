@@ -54,15 +54,21 @@ class ASK_Tx():
         self.__barker_seq = int(barker_seq)
         self.__crc_polynomial = int(crc_polynomial)
 
-        msg.good("Opened the Serial connection between Python and Arduino using comm port %s, Baud rate: %d."%(comm_port, baud_rate))
-        
         # meta data
         self.__crc_polynomial_bit_string = dec2bin(self.crc_polynomial, __CONSTANTS__['FRAME_CHECKSUM_BITS'] + 1)
 
         # Register the clean up function.
         # Will be called if the object is destroyed for any reason.
         atexit.register(self.cleanup)
-    
+
+        # Write garbage to wake up the serial connection
+        # Hack which is needed to make this work.
+        num_bytes_written = self.__arduino_comm_handler.write('ACC'.encode('ascii'))
+        assert num_bytes_written == 3
+        read_data = self.__arduino_comm_handler.read(3)
+        
+        msg.good("Opened the Serial connection between Python and Arduino using comm port %s, Baud rate: %d."%(comm_port, baud_rate))     
+
     @property
     def comm_port(self):
         """Returns Arduino-Python serial communication port.
@@ -168,14 +174,18 @@ class ASK_Tx():
         success = False
         data = frame.get_frame_bytes()
         
+        self.__arduino_comm_handler.flushInput()
+        self.__arduino_comm_handler.flushOutput()
+
         for count in range(0, self.num_retransmit_tries):
             if success != True:  
-                self.__arduino_comm_handler.write(struct.pack('>BBB', 82, data[0], data[1]))
+                bytes_read = self.__arduino_comm_handler.write(struct.pack('>BBB', 82, data[0], data[1]))
+                assert bytes_read == 3
                 time.sleep(0.001)
                 ack = self.__arduino_comm_handler.read(size=3)
+                #print(ack)
                 recv_frame = ack[1:].hex('-', 1).split('-')
                 recv_frame = [ chr(int(b, 16)) for b in recv_frame]
-                
                 if chr(ack[0]) == 'A':
                     # Check whether data recieved by the Arduino 
                     # matches the transmitted data.

@@ -411,7 +411,7 @@ class ASK_Rx():
             if self.log_captues and operation.__name__ in list(self.sample_captures_data.keys()):
                 self.sample_captures_data[operation.__name__].append(output)
 
-        return output
+        return frames_detected
 
     def cleanup(self):
         if self.__sdr is not None:

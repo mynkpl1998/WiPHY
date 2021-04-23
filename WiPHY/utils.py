@@ -237,6 +237,14 @@ class Frame:
         self.__crc_polynomial = dec2bin(crc_polynomial, self.__checksum_len + 1)
         self.__is_checksum_valid = self.__validate_checksum()
     
+    def __eq__(self, f):
+        """Defines the == operator for utils.Frame
+        Object."""
+        if self.payload == f.payload and self.seq_id == f.seq_id and self.preamble == f.preamble and self.checksum == f.checksum and self.crc_polynomial == f.crc_polynomial:
+            return True
+        else:
+            return False
+        
     @property
     def payload(self,):
         """Returns the frame payload.
@@ -314,11 +322,12 @@ class Frame:
     def get_frame_str(self):
         """Returns the frame structre in string format.
         """
-        return "Preamble: %d Frame Seq: %d, Payload, %d, Checksum: %d, Integrity: %s."%(self.preamble, 
+        return "Preamble: %d Frame Seq: %d, Payload, %d, Checksum: %d, Integrity: %s, CRC Poly: %d."%(self.preamble, 
                                                                                         self.seq_id,
                                                                                         self.payload,
                                                                                         self.checksum,
-                                                                                        "PASS" if self.is_checksum_valid else "FAIL")
+                                                                                        "PASS" if self.is_checksum_valid else "FAIL",
+                                                                                        str2dec(self.crc_polynomial))
 
 class lowPassFilter:
 

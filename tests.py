@@ -52,7 +52,6 @@ def test_str2list():
     out = str2list(data, int)
     assert sum(out) == 0
 
-
 def test_search_sequence_cv2():
     test_arr = np.concatenate((np.arange(0, 100), np.arange(70, 80)))
     test_seq = [
@@ -70,15 +69,23 @@ def test_Frame():
     frame1 = Frame(preamble=29, 
                    seq_id=1,
                    payload=63,
-                   checksum=4,
+                   checksum=0,
                    crc_polynomial=13)
     assert frame1.preamble == 29
     assert frame1.seq_id == 1
-    assert frame1.checksum == 4
+    assert frame1.checksum == 0
     assert frame1.payload == 63
     assert frame1.is_checksum_valid == True
     assert frame1.crc_polynomial == '1101'
-    assert frame1.get_frame_byte_string() == 'ëü'
+    assert frame1.get_frame_byte_string() == 'ëø'
+
+    # test == operator
+    frame2 = Frame(preamble=29, 
+                   seq_id=1,
+                   payload=63,
+                   checksum=0   ,
+                   crc_polynomial=13)
+    assert frame1 == frame2
 
     frame1 = Frame(preamble=29, 
                    seq_id=1,
@@ -94,6 +101,21 @@ def test_Frame():
     assert frame1.get_frame_byte_string() == 'ëú'
     #print(frame1)
 
+    # test == operator with a invalid checksum
+    frame2 = Frame(preamble=29, 
+                   seq_id=1,
+                   payload=63,
+                   checksum=2,
+                   crc_polynomial=13)
+    assert frame1 == frame2
+
+    # test frame objects are different
+    frame2 = Frame(preamble=29, 
+                   seq_id=1,
+                   payload=63,
+                   checksum=2,
+                   crc_polynomial=12)
+    assert (frame1 == frame2) == False
 
 def test_Muller():
     # Muller update rate.
@@ -169,7 +191,7 @@ def test_FrameDetector():
     assert f1.barker_seq == barker_seq
     assert f1.crc_polynomial == crc_polynomial
 
-    dummy_captures = [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]
+    dummy_captures = [0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0]
     dummy_captures = np.array(dummy_captures)
     out = f1.step(dummy_captures)
 
@@ -177,7 +199,7 @@ def test_FrameDetector():
     assert out[0].preamble == barker_seq
     assert out[0].seq_id == 2
     assert out[0].payload == 42
-    assert out[0].checksum == 3
+    assert out[0].checksum == 6
     assert out[0].is_checksum_valid == True
 
     #print(f1)
@@ -224,3 +246,8 @@ test_ASK_Demodulator()
 test_Muller()
 test_Frame()
 test_bit2str()
+test_search_sequence_cv2()
+test_str2list()
+test_dec2bin()
+test_str2dec()
+test_bit2dec()

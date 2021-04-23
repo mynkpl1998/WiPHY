@@ -34,8 +34,11 @@ if  __name__ == "__main__":
     payload = 0
     seq_id = 0
     while True:
+        start_time = time.time()
         status, count = radio.send(payload=payload,
                                    seq_id=seq_id)
+        end_time = time.time()
+        print("time taken: ", end_time-start_time)
         assert status
         time.sleep(0.001)
         payload += 1

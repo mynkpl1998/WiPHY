@@ -1,9 +1,11 @@
 import time
 import argparse
+from wasabi import msg
 from WiPHY.rx import ASK_Rx
 from WiPHY.tx import ASK_Tx
+from WiPHY.utils import Frame
 from WiPHY.utils import readYaml
-from alive_progress import alive_bar
+from alive_progress import alive_bar, config_handler
 
 parser = argparse.ArgumentParser(description="Script to analyze Tx-Rx performance.")
 parser.add_argument("-c", "--radio-config", type=str, required=True, help="Radio Configuration File.")
@@ -15,6 +17,9 @@ if  __name__ == "__main__":
 
     # Load radio configuration file.
     radio_config_dict = readYaml(file_path=args.radio_config)
+
+    # alive bar settings
+    config_handler.set_global(spinner='pulse', length=40)
 
     # Get SDR and rx settings.
     sample_rate = int(float(radio_config_dict['sdr_settings']['sample_rate']))
@@ -72,6 +77,10 @@ if  __name__ == "__main__":
     payload = 5
     seq_id = 1
     num_frames = logs_buffer_max_size
+    total_frames_sent = 0
+    correctly_recv = 0
+    #frame = Frame(preamble=preamble,seq_id=seq_id,payload=payload, checksum=, crc_polynomial=crc_polynomial)
+
 
     with alive_bar(num_frames) as bar:
         for num_frame in range(0, num_frames):
@@ -86,8 +95,17 @@ if  __name__ == "__main__":
 
             # Stop captures
             radio_rx.stop_captures()
-            
+
             # Analyze captures.
-            radio_rx.process_start_captures()
+            recv_frames = radio_rx.process_start_captures()
+            
+            total_frames_sent += len(recv_frames)
+            for frame in recv_frames:
+                if frame.is_checksum_valid:
+                    correctly_recv += 1
+
             bar()
 
+    msg.info("Total Frames Sent: %d, Total frames Recv Correctly: %d, FER: %.4f."%(total_frames_sent,
+                                                                                  correctly_recv,
+                                                                                  1 - (correctly_recv/float(total_frames_sent))))
