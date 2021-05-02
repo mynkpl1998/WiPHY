@@ -7,6 +7,7 @@ from rtlsdr import RtlSdr
 from datetime import datetime
 from collections import deque
 import matplotlib.pyplot as plt
+from alive_progress import alive_bar
 from multiprocessing import Process, Value, Manager
 from WiPHY.utils import lowPassFilter, Muller, ASK_Demodulator, FrameDetector
 manager = Manager()
@@ -69,8 +70,8 @@ class ASK_Rx():
                  crc_polynomial=13,
                  max_logs_buffer_size=500):
         
-        self.__sample_rate = int(sample_rate)
-        self.__center_freq = int(center_freq)
+        self.__sample_rate = int(float(sample_rate))
+        self.__center_freq = int(float(center_freq))
         self.__freq_corr = int(freq_corr)
         self.__sym_dur = float(symbol_dur)
         self.__gain = gain
@@ -140,8 +141,12 @@ class ASK_Rx():
             self.sample_captures_data[self.frame_detection.__name__] = deque(maxlen=self.max_logs_buffer_size)
 
         # Over write dead beaf samples of the sdr buffer.
-        for _ in range(0, 4):
-            self.__sdr.read_samples(1024)
+        msg.info("Running dummy captures.")
+        num_dummy_captures = 100
+        with alive_bar(num_dummy_captures) as bar:
+            for _ in range(0, num_dummy_captures):
+                self.__sdr.read_samples(4096)
+                bar()
         
         """
            Initialize all the signal processing blocks.
@@ -303,7 +308,7 @@ class ASK_Rx():
         max_iter = 20
         counter = 0
         while True:
-            buffer.append(self.__sdr.read_samples(2048))
+            buffer.append(self.__sdr.read_samples(4096))
             counter += 1
             #print(len(buffer))
             if request_stop.value == 1 or counter >= max_iter:

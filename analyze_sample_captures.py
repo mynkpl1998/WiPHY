@@ -20,7 +20,7 @@ data = None
 layout = [
     [sg.Text("Capture File: "), sg.Input(key='_CAPTURE_FILE_'), sg.FilesBrowse(), sg.Button("Load", key='_CAPTURE_FILE_LOAD_')],
     [sg.Multiline(size=(140, 7), key='--SETTINGS_TEXT--', autoscroll=True)],
-    [sg.Text('Capture Number:'), sg.Combo(list(range(0, 3000)), key='--FRAME_NUM_VAL--'), sg.Button('Analyze', key='--FRAME_NUM--')],
+    [sg.Text('Capture Number:'), sg.Combo(list(range(0, 3000)), key='--FRAME_NUM_VAL--'), sg.Button('Analyze', key='--FRAME_NUM--'), sg.Text('Valid capture indexs:'), sg.Combo(list(range(0, 3000)), key='--Valid-capture-indexs--' ) ],
     [sg.TabGroup(
         [
             [sg.Tab('Raw Samples', raw_samples_layout)],
@@ -131,6 +131,7 @@ def draw_figure(canvas, figure):
     return figure_canvas_agg
 
 window = sg.Window('Sample Captures Analyzer', layout, default_element_size=(40,40), finalize=True)  
+frames_detected_capture_indxs = []
 
 if __name__ == '__main__':
     
@@ -149,6 +150,13 @@ if __name__ == '__main__':
                 fileHandler = open(values['_CAPTURE_FILE_'], "rb")
                 data = pickle.load(fileHandler)
                 fileHandler.close()
+                
+                # Find capture indexs where the frames were detected.
+                for capture_idx, frames in enumerate(data['frame_detection']):
+                    if len(frames) > 0:
+                        frames_detected_capture_indxs.append(capture_idx)
+                
+                window['--Valid-capture-indexs--'].update(values=frames_detected_capture_indxs)
                 device_info_string = "Capture time stamp: %s.\n"%(data['cature_time_stamp'])
                 device_info_string += "Downlink performance => FER: %.3f, Frames detected: %d, Failed Frames: %d. \n"%(data['rx_performance_metrics']['fer'],
                                                                                                                       data['rx_performance_metrics']['frames_detected'],

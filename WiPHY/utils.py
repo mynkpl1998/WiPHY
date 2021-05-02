@@ -541,7 +541,9 @@ class FrameDetector:
     def __extractFrame(self, indexes, samples):
         """Returns the detected frames at given index(s) 
            from the sample captures by wrapping 
-           it in class of Frame.
+           it in class of Frame. 
+           Note: The algorithm assumes only single frame
+           exists in the sample captures.
 
            Inputs
            ------
@@ -564,10 +566,14 @@ class FrameDetector:
             payload = frame_data[__CONSTANTS__['FRAME_SEQ_ID_BITS']:__CONSTANTS__['FRAME_SEQ_ID_BITS'] + __CONSTANTS__['FRAME_PAYLOAD_BITS']]
             checksum = frame_data[__CONSTANTS__['FRAME_PAYLOAD_AND_SEQ_ID_BITS']:__CONSTANTS__['FRAME_PAYLOAD_AND_SEQ_ID_BITS'] + __CONSTANTS__['FRAME_CHECKSUM_BITS']]
             frames.append(Frame(preamble=self.barker_seq,
-                                seq_id=bit2dec(seq_id), 
+                                seq_id=bit2dec(seq_id),
                                 payload=bit2dec(payload),
                                 checksum=bit2dec(checksum),
                                 crc_polynomial=self.crc_polynomial))
+            """
+            # This assumes only one frame exists in the captures.
+            break
+            """
         return frames
       
     def step(self, samples):

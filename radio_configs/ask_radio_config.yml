@@ -6,14 +6,14 @@ sdr_settings:
   log_captures: true
   capture_len: 16384
   baseband_symbol_dur: 1e-3
-  max_logs_buffer_size: 1000
+  max_logs_buffer_size: 1500
 
 tx_settings:
   data_pin: 12
   arduino_comm_baud_rate: 115200
   arduino_comm_timeout: 5
   transmit_retries: 5
-  comm_port: '/dev/ttyACM0'
+  comm_port: '/dev/ttyACM1'
 
 common_settings:
   crc_polynomial: 13

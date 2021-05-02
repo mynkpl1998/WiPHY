@@ -1,5 +1,6 @@
 import time
 import argparse
+import numpy as np
 from wasabi import msg
 from WiPHY.rx import ASK_Rx
 from WiPHY.tx import ASK_Tx
@@ -74,24 +75,24 @@ if  __name__ == "__main__":
                       crc_polynomial=crc_polynomial)
 
     # Initialize the data to send.
-    payload = 5
-    seq_id = 1
-    num_frames = logs_buffer_max_size
+    dummy_frames = 10
+    num_frames = logs_buffer_max_size + dummy_frames
     total_frames_sent = 0
     correctly_recv = 0
-    #frame = Frame(preamble=preamble,seq_id=seq_id,payload=payload, checksum=, crc_polynomial=crc_polynomial)
-
 
     with alive_bar(num_frames) as bar:
         for num_frame in range(0, num_frames):
             
+            payload = np.random.randint(0, 64)
+            seq_id = np.random.randint(0, 4)
+
             # Start capturing the frames.
             radio_rx.start_captures()
             time.sleep(0.01)
             
             # Send the data from tx.
             radio_tx.send(payload=payload, seq_id=seq_id)
-            time.sleep(0.01)
+            time.sleep(0.001)
 
             # Stop captures
             radio_rx.stop_captures()
@@ -99,11 +100,16 @@ if  __name__ == "__main__":
             # Analyze captures.
             recv_frames = radio_rx.process_start_captures()
             
-            total_frames_sent += len(recv_frames)
-            for frame in recv_frames:
-                if frame.is_checksum_valid:
-                    correctly_recv += 1
-
+            if num_frame > dummy_frames and len(recv_frames) > 0:
+                """
+                We consider only first frame as we know only one frame
+                was transmitted.
+                """
+                total_frames_sent += 1
+                for frame in recv_frames:
+                    if frame.is_checksum_valid:
+                        correctly_recv += 1
+                    break
             bar()
 
     msg.info("Total Frames Sent: %d, Total frames Recv Correctly: %d, FER: %.4f."%(total_frames_sent,

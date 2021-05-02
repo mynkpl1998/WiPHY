@@ -50,10 +50,17 @@ if  __name__ == "__main__":
 				   capture_len=capture_len,
 				   max_logs_buffer_size=logs_buffer_max_size)
 	
+	led_stat = False
+
 	# Start capturing the frames.
 	try:
 		while True:
-			radio.step()
+			frames = radio.step()
+			if len(frames) > 0 and frames[0].is_checksum_valid:
+				if frames[0].payload == 1:
+					led_stat = not led_stat
+			print("LED: %d"%(led_stat), end="\r")
+
 	except KeyboardInterrupt:
 		pass
 	

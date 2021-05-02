@@ -181,7 +181,7 @@ class ASK_Tx():
             if success != True:  
                 bytes_read = self.__arduino_comm_handler.write(struct.pack('>BBB', 82, data[0], data[1]))
                 assert bytes_read == 3
-                time.sleep(0.001)
+                time.sleep(0.0005)
                 ack = self.__arduino_comm_handler.read(size=3)
                 #print(ack)
                 recv_frame = ack[1:].hex('-', 1).split('-')
